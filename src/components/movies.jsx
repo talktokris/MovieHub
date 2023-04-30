@@ -7,7 +7,7 @@ import Pagination from "../common/pagination";
 //import SideMenu from "../common/sideMenu";
 import ListGroup from "../common/listGroup";
 import { paginate } from "../utils/paginate";
-import Nav from "../common/nav";
+
 import MoviesTable from "./movieTable";
 import _ from "lodash";
 
@@ -112,7 +112,6 @@ class Movies extends Component {
 
     return (
       <>
-        <Nav />
         <main role="main" className="container-fluid">
           <div className="row">
             <div className="col-2" style={{ marginTop: "1em" }}>

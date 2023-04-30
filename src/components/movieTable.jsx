@@ -1,13 +1,18 @@
 import React, { Component } from "react";
 
 import Like from "../common/like";
+import { Link } from "react-router-dom";
 
 import Table from "../common/table";
 
 class movieTable extends Component {
   columns = [
     { path: "id", lebel: "SN" },
-    { path: "title", lebel: "Title" },
+    {
+      path: "title",
+      lebel: "Title",
+      content: (movie) => <Link to={`/movies/${movie.id}`}>{movie.title}</Link>,
+    },
     { path: "year", lebel: "Year" },
     { path: "director", lebel: "Director" },
     { path: "duration", lebel: "Duration" },
