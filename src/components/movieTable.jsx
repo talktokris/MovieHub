@@ -43,6 +43,14 @@ class movieTable extends Component {
 
   render() {
     const { movies, onSort, sortColumn } = this.props;
+
+    if (movies.length === 0) {
+      return (
+        <div className="col" style={{ textAlign: "center", paddingTop: 30 }}>
+          <h4>No Movies Found</h4>
+        </div>
+      );
+    }
     return (
       <Table
         columns={this.columns}
