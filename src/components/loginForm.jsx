@@ -1,5 +1,14 @@
 import Joi from "joi-browser";
 import Form from "../common/form";
+import { useParams, useNavigate } from "react-router-dom";
+
+import auth from "../services/authService";
+
+function withParams(Component) {
+  return (props) => (
+    <Component {...props} params={useParams()} navigate={useNavigate()} />
+  );
+}
 
 class LoginForm extends Form {
   state = { data: { username: "", password: "" }, errors: {} };
@@ -9,8 +18,20 @@ class LoginForm extends Form {
     password: Joi.string().required().label("Password"),
   };
 
-  doSubmit = () => {
-    console.log("Submited");
+  doSubmit = async () => {
+    try {
+      const { data } = this.state;
+      //console.log(data);
+      await auth.login(data.username, data.password);
+      // return this.props.navigate("/movies");
+      window.location = "/";
+    } catch (ex) {
+      if (ex.response && ex.response.status === 400) {
+        const errors = { ...this.state.errors };
+        errors.username = ex.response.data;
+        this.setState({ errors });
+      }
+    }
   };
 
   render() {
@@ -27,4 +48,4 @@ class LoginForm extends Form {
   }
 }
 
-export default LoginForm;
+export default withParams(LoginForm);

@@ -2,8 +2,7 @@ import React, { Component } from "react";
 import Joi from "joi-browser";
 import Input from "./input";
 import Select from "./select";
-import { MoviesData } from "../data/moviesData";
-import { genres } from "../data/fakeGenreService";
+
 
 class Form extends Component {
   state = { data: {}, errors: {} };
@@ -29,7 +28,7 @@ class Form extends Component {
   handleSubmit = (e) => {
     e.preventDefault();
     const errors = this.validate();
-    console.log(errors);
+    // console.log(errors);
     this.setState({ errors: errors || {} });
     if (errors) return;
     this.doSubmit();

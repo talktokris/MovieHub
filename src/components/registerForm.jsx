@@ -2,6 +2,16 @@ import React from "react";
 
 import Joi from "joi-browser";
 import Form from "../common/form";
+import { useParams, useNavigate } from "react-router-dom";
+
+import * as userService from "../services/userService";
+import auth from "../services/authService";
+
+function withParams(Component) {
+  return (props) => (
+    <Component {...props} params={useParams()} navigate={useNavigate()} />
+  );
+}
 
 class RegisterForm extends Form {
   state = {
@@ -15,8 +25,24 @@ class RegisterForm extends Form {
     name: Joi.string().required().min(5).label("Name"),
   };
 
-  doSubmit = () => {
-    console.log("Register Submited");
+  doSubmit = async () => {
+    try {
+      const response = await userService.register(this.state.data);
+      auth.loginWithJwt(response.headers["x-auth-token"]);
+      window.location = "/";
+
+      // console.log(response);
+      // localStorage.setItem("token", response.headers["x-auth-token"]);
+      // return this.props.navigate("/");
+
+      //  console.log(response.headers["x-auth-token"]);
+    } catch (ex) {
+      if (ex.response && ex.response.status === 400) {
+        const errors = { ...this.state.errors };
+        errors.username = ex.response.data;
+        this.setState({ errors });
+      }
+    }
   };
 
   render() {
@@ -35,4 +61,4 @@ class RegisterForm extends Form {
   }
 }
 
-export default RegisterForm;
+export default withParams(RegisterForm);

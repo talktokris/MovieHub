@@ -1,13 +1,20 @@
 import React from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+
 import Joi from "joi-browser";
 import Form from "../common/form";
-import { genres } from "../data/fakeGenreService";
-import { MoviesData } from "../data/moviesData";
+import { getMovie, saveMovie } from "../services/movieService";
+import { getGenres } from "../services/genreService";
 
 function withParams(Component) {
-  return (props) => <Component {...props} params={useParams()} />;
+  return (props) => (
+    <Component {...props} params={useParams()} navigate={useNavigate()} />
+  );
 }
+
+// export const withRouter = (WrappedComponent) => (props) => {
+//   return <WrappedComponent {...props} navigate={useNavigate()} />;
+// };
 
 class MovieForm extends Form {
   state = {
@@ -17,13 +24,13 @@ class MovieForm extends Form {
   };
 
   schema = {
-    id: Joi.string(),
+    _id: Joi.string(),
     title: Joi.string().required().label("Title"),
-    genreId: Joi.string().label("Genre"),
+    genreId: Joi.string().required().label("Genre"),
     numberInStock: Joi.number()
       .required()
       .min(0)
-      .max(9999)
+      .max(100)
       .label("Number in Stock"),
     dailyRentalRate: Joi.number()
       .required()
@@ -32,40 +39,52 @@ class MovieForm extends Form {
       .label("Daily Rental Rate"),
   };
 
-  componentDidMount() {
-    this.setState({ genres: genres });
-    const movieId = this.props.params.id;
-    if (movieId === "new") return;
-
-    const movie = this.getMovie(movieId);
-
-    // const navigate = useNavigate();
-    if (!movie)
-      return this.state.redirect && <Navigate to="/not-found" replace={true} />;
-    //if (!movie) return navigate("/not-found", { replace: true });
-
-    this.setState({ data: this.mapToViewModel(movie) });
-
-    // console.log(genres);
+  async populateGenres() {
+    const { data: genres } = await getGenres();
+    this.setState({ genres });
   }
-  getMovie = (id) => {
-    return MoviesData.find((m) => m.id === Number(id));
+
+  async populateMovie() {
+    try {
+      const movieId = this.props.params.id;
+
+      if (movieId === "new-movie") return;
+
+      const { data: movie } = await getMovie(movieId);
+      this.setState({ data: this.mapToViewModel(movie) });
+    } catch (error) {
+      if (error.response && error.response.status === 404)
+        // return this.props.history.replace("/not-found");
+        return this.props.navigate("/not-found");
+    }
+  }
+
+  async componentDidMount() {
+    await this.populateGenres();
+    await this.populateMovie();
+  }
+  getMovie = async (id) => {
+    const { data: MoviesData } = await getMovie(id);
+    //console.log(MoviesData.find((m) => m._id === id));
+    //  return MoviesData.find((m) => m._id === id);
+    return MoviesData;
   };
 
   mapToViewModel = (movie) => {
+    // console.log(movie);
     ///const genreName = genres.find((g) => g._id === movie.genre);
 
     return {
-      id: movie.id,
+      _id: movie._id,
       title: movie.title,
-      genreId: movie.genre,
-      numberInStock: movie.year,
-      dailyRentalRate: movie.score,
+      genreId: movie.genre._id,
+      numberInStock: movie.numberInStock,
+      dailyRentalRate: movie.dailyRentalRate,
     };
   };
-
+  /*
   saveMovie = (movie) => {
-    //  let movieInDb = MoviesData.find((m) => m.id === movie.id) || {};
+    // let movieInDb = MoviesData.find((m) => m.id === movie.id) || {};
     // movieInDb.id = movie.title;
     // movieInDb.title = movie.title;
     // movieInDb.genre = movie.genre.id;
@@ -76,10 +95,14 @@ class MovieForm extends Form {
     //   MoviesData.push(movieInDb);
     // }
   };
-
-  doSubmit = () => {
-    this.saveMovie(this.state.data);
-    //  console.log("Submited");
+*/
+  doSubmit = async () => {
+    try {
+      await saveMovie(this.state.data);
+      this.props.navigate("/movies");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   render() {

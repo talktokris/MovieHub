@@ -7,17 +7,17 @@ import Table from "../common/table";
 
 class movieTable extends Component {
   columns = [
-    { path: "id", lebel: "SN" },
     {
       path: "title",
       lebel: "Title",
-      content: (movie) => <Link to={`/movies/${movie.id}`}>{movie.title}</Link>,
+      content: (movie) => (
+        <Link to={`/movies/${movie._id}`}>{movie.title}</Link>
+      ),
     },
-    { path: "year", lebel: "Year" },
-    { path: "director", lebel: "Director" },
-    { path: "duration", lebel: "Duration" },
-    { path: "genre", lebel: "Genre" },
-    { path: "score", lebel: "Score" },
+    { path: "numberInStock", lebel: "Stock" },
+    { path: "dailyRentalRate", lebel: "Rate" },
+    { path: "genre.name", lebel: "Genre" },
+
     {
       key: "like",
       content: (movie) => (

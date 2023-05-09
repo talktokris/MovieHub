@@ -1,39 +1,54 @@
 import React, { Component } from "react";
-
-import { MoviesData } from "../data/moviesData";
-import { genres } from "../data/fakeGenreService";
-
-import Pagination from "../common/pagination";
-//import SideMenu from "../common/sideMenu";
-import ListGroup from "../common/listGroup";
-import { paginate } from "../utils/paginate";
 import { Link } from "react-router-dom";
-
+import { toast } from "react-toastify";
 import MoviesTable from "./movieTable";
+import ListGroup from "../common/listGroup";
+import Pagination from "../common/pagination";
+
+import { getMovies, deleteMovie } from "../services/movieService";
+import { getGenres } from "../services/genreService";
+import { paginate } from "../utils/paginate";
 import _ from "lodash";
 import SearchBox from "../common/searchBox";
+
+//import { genres } from "../data/fakeGenreService";
+//import SideMenu from "../common/sideMenu";
 
 class Movies extends Component {
   state = {
     movies: [],
     genres: [],
-    pageSize: 5,
+    pageSize: 4,
     currentPage: 1,
     selectedGenre: "",
     sortColumn: { path: "title", order: "asc" },
     searchQuery: "",
   };
 
-  componentDidMount() {
-    const genreData = [{ _id: 0, name: "All Genre" }, ...genres];
-    this.setState({ movies: MoviesData, genres: genreData });
+  async componentDidMount() {
+    const { data } = await getGenres();
+
+    const genreData = [{ _id: "", name: "All Genre" }, ...data];
+    const { data: movies } = await getMovies();
+    // console.log(response.data);
+    this.setState({ movies: movies, genres: genreData });
   }
 
-  DeleteNew = (movie) => {
-    const newMovies = this.state.movies.filter((m) => m.id !== movie.id);
+  DeleteNew = async (movie) => {
+    const orginalMovies = this.state.movies;
+    const movies = orginalMovies.filter((m) => m._id !== movie._id);
+    this.setState({ movies: movies });
+    // toast.error("This movie has already been deleted");
 
-    this.setState({ movies: newMovies });
-    this.setState({ total: newMovies.length });
+    try {
+      await deleteMovie(movie._id);
+    } catch (ex) {
+      if (ex.response && ex.response.status === 404)
+        toast.error("This movie has already been deleted");
+      this.setState({ movies: orginalMovies });
+    }
+
+    // this.setState({ total: newMovies.length });
   };
 
   handleLike = (movie) => {
@@ -47,35 +62,27 @@ class Movies extends Component {
 
   handlePageChange = (page) => {
     this.setState({ currentPage: page });
-    //console.log(page);
+    // console.log(page);
   };
 
   handleClickGenre = (name) => {
-    console.log(name);
-    this.setState({ selectedGenre: name, currentPage: 1, searchQuery: "" });
     // console.log(name);
-    // const movies = this.state.movies.filter((m) => m.genre == name._id);
-    // console.log(movies);
-    // this.setState({ movies: movies });
-    // this.setState({ total: movies.length });
+    this.setState({ selectedGenre: name, currentPage: 1, searchQuery: "" });
   };
 
   handleSort = (sortColumn) => {
     this.setState({ sortColumn: sortColumn });
-
-    // this.setState({ sortColumn: { path, order: "asc" } });
-
-    //console.log(path);
   };
   handleSearch = (query) => {
     this.setState({ searchQuery: query, selectedGenre: "", currentPage: 1 });
-    console.log(query);
+    // console.log(query);
   };
 
   getPageData = () => {
     const {
       pageSize,
       currentPage,
+      sortColumn,
       selectedGenre,
       movies: allMovies,
       searchQuery,
@@ -86,14 +93,10 @@ class Movies extends Component {
       filtered = allMovies.filter((m) =>
         m.title.toLowerCase().startsWith(searchQuery.toLowerCase())
       );
-    else if (selectedGenre && selectedGenre._id !== 0)
-      filtered = allMovies.filter((m) => m.genre === selectedGenre._id);
+    else if (selectedGenre && selectedGenre._id)
+      filtered = allMovies.filter((m) => m.genre._id === selectedGenre._id);
 
-    const sorted = _.orderBy(
-      filtered,
-      [this.state.sortColumn.path],
-      [this.state.sortColumn.order]
-    );
+    const sorted = _.orderBy(filtered, [sortColumn.path], [sortColumn.order]);
 
     const movies = paginate(sorted, currentPage, pageSize);
 
@@ -101,18 +104,9 @@ class Movies extends Component {
   };
 
   render() {
-    const { pageSize, currentPage, searchQuery } = this.state;
+    // const { totalCount: totalCount } = this.state.movies;
+    const { pageSize, currentPage, sortColumn, searchQuery } = this.state;
     const { totalCount, data: movies } = this.getPageData();
-
-    // const movies = paginate(sorted, currentPage, pageSize);
-
-    // if (totalCount === 0)
-    //   return (
-    //     <div style={{ padding: "5em" }}>
-    //       <h3>No Item Found</h3>
-    //     </div>
-    //   );
-
     return (
       <>
         <main role="main" className="container-fluid">
@@ -129,7 +123,7 @@ class Movies extends Component {
                 <div style={{ paddingTop: "1em" }}>
                   <div>
                     <Link
-                      to="/movies/new"
+                      to="/movies/new-movie"
                       className="btn btn-primary"
                       style={{ marginBottom: 20 }}
                     >
